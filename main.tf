@@ -18,9 +18,60 @@ data "aws_region" "current" {}
 # Get the current AWS caller identity
 data "aws_caller_identity" "current" {}
 
-# Get the default VPC
-data "aws_vpc" "default" {
-  default = true
+# Create new VPC
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "ec2-instance-connect-vpc"
+  }
+}
+
+# Create Internet Gateway
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "ec2-instance-connect-igw"
+  }
+}
+
+# Create public subnet
+resource "aws_subnet" "public" {
+  count = length(var.public_subnet_cidrs)
+
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "public-subnet-${count.index + 1}"
+  }
+}
+
+# Create route table for public subnets
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "public-route-table"
+  }
+}
+
+# Associate public subnets with public route table
+resource "aws_route_table_association" "public" {
+  count = length(var.public_subnet_cidrs)
+
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
 }
 
 # Get availability zones
@@ -32,7 +83,7 @@ data "aws_availability_zones" "available" {
 resource "aws_security_group" "ec2_sg" {
   name        = "ec2-instance-connect-sg"
   description = "Security group for EC2 Instance Connect and SSM"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = aws_vpc.main.id
 
   # SSH access
   ingress {
@@ -228,6 +279,7 @@ resource "aws_instance" "amazon_linux" {
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
   user_data              = local.user_data_amazon_linux
+  subnet_id              = aws_subnet.public[0].id  # Use first public subnet
 
   tags = {
     Name = "amazon-linux-ec2-instance"
@@ -248,6 +300,7 @@ resource "aws_instance" "rhel_9" {
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
   user_data              = local.user_data_rhel9
+  subnet_id              = aws_subnet.public[1].id  # Use second public subnet
 
   tags = {
     Name = "rhel9-ec2-instance"
@@ -268,6 +321,7 @@ output "amazon_linux_instance" {
     private_ip    = aws_instance.amazon_linux.private_ip
     instance_type = aws_instance.amazon_linux.instance_type
     az            = aws_instance.amazon_linux.availability_zone
+    subnet_id     = aws_instance.amazon_linux.subnet_id
   }
 }
 
@@ -278,5 +332,18 @@ output "rhel9_instance" {
     private_ip    = aws_instance.rhel_9.private_ip
     instance_type = aws_instance.rhel_9.instance_type
     az            = aws_instance.rhel_9.availability_zone
+    subnet_id     = aws_instance.rhel_9.subnet_id
   }
+}
+
+output "vpc_id" {
+  value = aws_vpc.main.id
+}
+
+output "public_subnet_ids" {
+  value = aws_subnet.public[*].id
+}
+
+output "internet_gateway_id" {
+  value = aws_internet_gateway.main.id
 }
