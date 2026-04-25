@@ -1,0 +1,250 @@
+name: Linux VM Request
+description: Request a new Linux virtual machine with kumsx VMware Standards
+title: "VM Request: Linux - <purpose>"
+labels: ["vm-request", "linux", "pending"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Linux VM Provisioning Request
+        This will create a permanent Linux VM in your selected environment.
+  - type: input
+    id: vm_name
+    attributes:
+      label: VM Name
+      description: Base name for the virtual machine (max 15 characters, letters/numbers/hyphens only). If creating multiple VMs, they will be numbered (e.g., web-server-01, web-server-02)
+      placeholder: "web-server"
+    validations:
+      required: true
+      pattern: ^[a-zA-Z0-9-]{1,15}$
+
+  - type: input
+    id: vm_count
+    attributes:
+      label: Number of VMs
+      description: Create multiple identical VMs (will be auto-numbered, max 10)
+      placeholder: "1"
+    validations:
+      required: true
+      pattern: ^([1-9]|10)$
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Select deployment environment
+      options:
+        - dev
+        - test
+        - qa
+        - prod
+        - dr
+        - sandbox
+    validations:
+      required: true
+
+  - type: dropdown
+    id: datacenter
+    attributes:
+      label: Datacenter
+      description: Select deployment datacenter
+      options:
+        - wtc25
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: os_type
+    attributes:
+      label: Operating System Type
+      options:
+        - linux
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os_sku
+    attributes:
+      label: Linux Distribution
+      description: Select the Linux distribution according to Kumsx standards
+      options:
+        - rhel-8-gen2
+        - rhel-9-gen2
+        - ubuntu-20_04-lts-gen2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: guest_id
+    attributes:
+      label: Guest OS Identifier
+      description: VMware guest OS identifier for the selected distribution
+      options:
+        - rhel8_64Guest
+        - rhel9_64Guest
+        - ubuntu64Guest
+    validations:
+      required: true
+
+  - type: dropdown
+    id: template_name
+    attributes:
+      label: Template Name
+      description: VMware template to use for VM creation
+      options:
+        - linux_rhel9
+        - rhel8-with-user
+        - Template_pipeline
+        - rhel9-templatefrom150server
+    validations:
+      required: true
+
+  - type: input
+    id: num_cpus
+    attributes:
+      label: Number of CPUs
+      description: Number of virtual CPUs for the VM (e.g., 2, 4, 8)
+      placeholder: "2"
+    validations:
+      required: true
+      pattern: ^[1-9][0-9]*$
+
+  - type: input
+    id: memory
+    attributes:
+      label: Memory (MB)
+      description: Amount of RAM in megabytes (e.g., 4096 for 4GB)
+      placeholder: "4096"
+    validations:
+      required: true
+      pattern: ^[1-9][0-9]*$
+
+  - type: input
+    id: ipv4_address
+    attributes:
+      label: IPv4 Address
+      description: Static IP address for the VM (must be unique)
+      placeholder: "146.18.87.150"
+    validations:
+      required: true
+      pattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}$
+
+  - type: input
+    id: ipv4_netmask
+    attributes:
+      label: IPv4 Netmask (CIDR)
+      description: Subnet mask in CIDR notation (e.g., 24 for /24, 25 for /25)
+      placeholder: "25"
+    validations:
+      required: true
+      pattern: ^([8-9]|[12][0-9]|3[0-2])$
+
+  - type: input
+    id: ipv4_gateway
+    attributes:
+      label: IPv4 Gateway
+      description: Default gateway IP address
+      placeholder: "146.18.87.129"
+    validations:
+      required: true
+      pattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}$
+
+  - type: textarea
+    id: dns_servers
+    attributes:
+      label: DNS Servers
+      description: |
+        List of DNS server IPs as JSON array. Example:
+        ["192.112.46.153", "8.8.8.8"]
+      placeholder: '["192.112.46.153"]'
+    validations:
+      required: true
+
+  - type: input
+    id: domain
+    attributes:
+      label: Domain
+      description: DNS domain suffix (e.g., example.com)
+      placeholder: "fsc.kumsx.com"
+    validations:
+      required: false
+
+  - type: input
+    id: root_disk_size
+    attributes:
+      label: Root Disk Size (GB)
+      description: Size of the root disk in GB (optional - defaults to 100GB)
+      placeholder: "100"
+    validations:
+      required: false
+      pattern: ^[1-9][0-9]*$
+
+  - type: textarea
+    id: additional_disks
+    attributes:
+      label: Additional Disks (Optional)
+      description: |
+        Specify additional disks as JSON array (must use square brackets [ ]).
+        
+        **Format Legend:**
+        - `size` (required): Disk size in GB
+        - `thin_provisioned` (optional): true (default) for thin provisioning, false for thick
+        - `disk_mode` (optional): "persistent" (default), "independent_persistent", or "independent_nonpersistent"
+        
+        **Examples:**
+        ```json
+        [{"size": 50}]
+        [{"size": 50}, {"size": 100}]
+        [{"size": 50, "thin_provisioned": false}]
+        ```
+      placeholder: '[{"size": 50}]'
+    validations:
+      required: false
+
+  - type: input
+    id: eai
+    attributes:
+      label: EAI
+      description: EAI number for billing/tracking
+      placeholder: "3536348"
+    validations:
+      required: false
+
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      description: Email or ID of the resource owner
+      placeholder: "kumaresang@gmail.com"
+    validations:
+      required: true
+
+  - type: input
+    id: project
+    attributes:
+      label: Project Name
+      description: Project or initiative name
+      placeholder: "FWay-Automation"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: platform_software
+    attributes:
+      label: Platform Software (Optional)
+      description: Select additional middleware/platform software to install. Base OS roles (including DigiCert) are always installed.
+      options:
+        - label: Ab Initio Data Processing Platform
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Linux VM Configuration Notes
+        - **Supported Distributions:** RHEL 8/9, Ubuntu 20.04
+        - **Default Configuration:** Static IP, DNS, and network settings are pre-configured
+        - **Root Disk:** Defaults to 100GB if not specified
+        - **Network:** VMs will be configured with corporate network settings
+        - **Security:** SSH key authentication will be configured
+        - **Monitoring:** Standard monitoring agents will be installed
+        - **Permanent VM:** This VM will remain until manually deleted
