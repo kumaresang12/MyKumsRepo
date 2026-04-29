@@ -25,4 +25,5 @@ jobs:
         
       - name: Run unit tests
         run: |
+          cd backend
           tox -e unit
